@@ -9,5 +9,5 @@ export BW_SESSION
 
 bw unlock --check
 
-bw serve --hostname 0.0.0.0 #--disable-origin-protection
-echo "Running `bw server` on port 8087"
+echo "Running \`bw server\` on port 8087"
+exec bw serve --hostname 0.0.0.0 #--disable-origin-protection
