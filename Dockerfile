@@ -22,6 +22,7 @@ RUN apt update && \
 COPY entrypoint.sh /
 USER bw
 WORKDIR /bw
+ENV HOME=/bw
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint.sh"]
