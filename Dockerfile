@@ -11,9 +11,17 @@ RUN apt update && \
     unzip bw.zip && \
     chmod +x bw && \
     mv bw /usr/local/bin/bw && \
-    rm -rfv bw.zip*
+    rm -rfv bw.zip* && \
+    mkdir /bw && \
+    groupadd --gid 1000 bw && \
+    useradd --system --uid 1000 --no-create-home --shell /bin/false --home /bw --gid 1000 bw && \
+    echo "bw:supersecret" | chpasswd && \
+    chown -R bw:0 /bw && \
+    chmod -R g=u /bw
 
 COPY entrypoint.sh /
+USER bw
+WORKDIR /bw
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint.sh"]
