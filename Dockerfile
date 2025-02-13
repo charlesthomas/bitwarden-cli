@@ -1,6 +1,10 @@
 FROM debian:sid
 
 ARG BW_CLI_VERSION
+# See also https://bitwarden.com/help/cli/#log-in-to-multiple-accounts for this env var.
+# By default it is composed as "~/Bitwarden CLI" but we don't want that, we want more control,
+# make the app write the config to /bw/data.json
+ENV BITWARDENCLI_APPDATA_DIR=/bw
 
 RUN apt update && \
     apt install -y tini unzip wget && \
@@ -12,17 +16,16 @@ RUN apt update && \
     chmod +x bw && \
     mv bw /usr/local/bin/bw && \
     rm -rfv bw.zip* && \
-    mkdir /bw && \
+    mkdir "${BITWARDENCLI_APPDATA_DIR}" && \
     groupadd --gid 1000 bw && \
-    useradd --system --uid 1000 --no-create-home --shell /bin/false --home /bw --gid 1000 bw && \
+    useradd --system --uid 1000 --no-create-home --shell /bin/false --home "${BITWARDENCLI_APPDATA_DIR}" --gid 1000 bw && \
     echo "bw:supersecret" | chpasswd && \
-    chown -R bw:0 /bw && \
-    chmod -R g=u /bw
+    chown -R bw:0 "${BITWARDENCLI_APPDATA_DIR}" && \
+    chmod -R g=u "${BITWARDENCLI_APPDATA_DIR}"
 
 COPY entrypoint.sh /
 USER bw
-WORKDIR /bw
-ENV HOME=/bw
+WORKDIR "${BITWARDENCLI_APPDATA_DIR}"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint.sh"]
