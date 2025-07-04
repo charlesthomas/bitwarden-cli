@@ -1,16 +1,26 @@
+FROM alpine:latest AS downloader
+
+ARG BW_VERSION=2025.6.1
+
+RUN apk update --no-cache \
+ && apk add --no-cache curl jq \
+ && curl -sLo bw.zip "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-oss-linux-${BW_VERSION}.zip" \
+ && echo $(\
+    curl -sL "https://api.github.com/repos/bitwarden/clients/releases/tags/cli-v${BW_VERSION}" | \
+    jq -r ".assets[] | select(.name == \"bw-oss-linux-${BW_VERSION}.zip\") .digest" | \
+    cut -f2 -d:) bw.zip > sum.txt \
+ && sha256sum -sc sum.txt \
+ && unzip bw.zip
+
 FROM debian:sid
 
-ARG BW_CLI_VERSION
+COPY --from=downloader bw /usr/local/bin/
 
-RUN apt update && \
-    apt install -y wget unzip && \
-    wget https://github.com/bitwarden/clients/releases/download/cli-v${BW_CLI_VERSION}/bw-oss-linux-sha256-${BW_CLI_VERSION}.txt --no-verbose -O bw.zip.sha256 && \
-    wget https://github.com/bitwarden/clients/releases/download/cli-v${BW_CLI_VERSION}/bw-oss-linux-${BW_CLI_VERSION}.zip --no-verbose -O bw.zip && \
-    echo "$(cat bw.zip.sha256) bw.zip" | sha256sum --check - && \
-    unzip bw.zip && \
-    chmod +x bw && \
-    mv bw /usr/local/bin/bw && \
-    rm -rfv bw.zip*
+USER 1000
+
+WORKDIR /bw
+
+ENV HOME=/bw
 
 COPY entrypoint.sh /
 

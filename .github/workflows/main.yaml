@@ -1,0 +1,80 @@
+#
+name: Create and publish a Docker image
+
+# Configures this workflow to run every time a change is pushed to the branch called `release`.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - entrypoint.sh
+      - VERSION
+
+# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set version from file
+        run: |
+          echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+          echo "BW_VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+      - name: Delete outdated tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --tags
+          for tag in $(git tag); do
+            echo $tag
+            if [[ "${tag}" == "${VERSION}" ]]; then
+              gh release delete $VERSION
+              git tag --delete $VERSION
+              git push --delete origin $VERSION
+            fi
+          done
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          build-args: BW_VERSION=${{ env.BW_VERSION }}
+          context: .
+          push: true
+          tags: ghcr.io/charlesthomas/bitwarden-cli:${{ env.VERSION }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Create tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const {VERSION} = process.env
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${VERSION}`,
+              sha: context.sha
+            })
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create $VERSION -F VERSION
