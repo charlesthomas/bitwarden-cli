@@ -1,6 +1,6 @@
 FROM debian:sid
 
-ARG BW_CLI_VERSION=2025.12.1
+ARG BW_CLI_VERSION
 
 RUN apt update && \
     apt install -y wget unzip && \
