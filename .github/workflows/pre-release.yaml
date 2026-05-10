@@ -29,7 +29,7 @@ jobs:
       - name: Set version from file
         run: |
           echo "VERSION=$(cat VERSION)-pre-release" >> "$GITHUB_ENV"
-          echo "BW_VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+          echo "BW_CLI_VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
       - name: Delete outdated tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,7 +57,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
-          build-args: BW_VERSION=${{ env.BW_VERSION }}
+          build-args: BW_CLI_VERSION=${{ env.BW_CLI_VERSION }}
           context: .
           push: true
           tags: ghcr.io/charlesthomas/bitwarden-cli:${{ env.VERSION }}
