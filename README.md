@@ -9,6 +9,11 @@ both the `Dockerfile` and `entrypoint.sh` are a near-identical copy/paste.
 the only changes are to the `Dockerfile` to convert `BW_CLI_VERSION` from an `ENV` to an `ARG`,
 so that the official upstream version can be read from the `VERISON` file for the `ARG` as well as the image tag
 
+# contributions
+
+contributions are welcome! however, before opening PRs here for changes to files in the `external-secrets` docs,
+please open a PR to their docs first. when you open a PR here, please include a link to the changes there.
+
 # tag convention
 
 ```bash
